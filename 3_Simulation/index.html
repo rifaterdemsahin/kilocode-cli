@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎨 Simulation — KiloCode CLI</title>
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: #30363d;
+      --accent: #58a6ff; --text: #e6edf3; --muted: #8b949e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+    /* DEBUG BTN */
+    #debug-btn {
+      position: fixed; bottom: 1.2rem; right: 1.2rem; z-index: 1000;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); padding: 0.45rem 0.9rem; border-radius: 20px;
+      font-size: 0.75rem; cursor: pointer; transition: all 0.2s;
+    }
+    #debug-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #debug-btn.active { border-color: #3fb950; color: #3fb950; }
+
+    /* NAV */
+    #top-nav { display:none; background:var(--surface); border-bottom:1px solid var(--border); padding:0.6rem 1rem; position:sticky; top:0; z-index:100; }
+    #top-nav.visible { display:block; }
+    .nav-inner { max-width:900px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; }
+    .nav-brand { font-weight:700; color:var(--accent); margin-right:0.8rem; text-decoration:none; font-size:0.9rem; }
+    .nav-links { display:flex; flex-wrap:wrap; gap:0.3rem; list-style:none; }
+    .nav-links a { display:inline-block; padding:0.25rem 0.65rem; border-radius:6px; font-size:0.78rem; text-decoration:none; color:var(--muted); border:1px solid transparent; transition:all 0.15s; }
+    .nav-links a:hover { background:rgba(88,166,255,0.08); border-color:var(--accent); color:var(--accent); }
+
+    /* PAGE */
+    .page { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; }
+
+    /* CAROUSEL */
+    .carousel-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    .carousel-stage {
+      position: relative;
+      min-height: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slide {
+      display: none;
+      width: 100%;
+      text-align: center;
+      padding: 2rem;
+      animation: fadeIn 0.4s ease;
+    }
+    .slide.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .slide img { max-width: 100%; max-height: 280px; border-radius: 8px; object-fit: contain; }
+    .slide .mock {
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: left;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: #a5d6ff;
+      white-space: pre;
+    }
+    .slide .caption { margin-top: 1rem; color: var(--muted); font-size: 0.85rem; }
+
+    .carousel-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .carousel-controls button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.15s;
+    }
+    .carousel-controls button:hover { border-color: var(--accent); color: var(--accent); }
+    .dots { display: flex; gap: 0.5rem; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .dot.active { background: var(--accent); }
+
+    /* MOCKUPS GRID */
+    .mockups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .mockup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .mockup-card h3 { font-size: 0.9rem; margin-bottom: 0.6rem; color: var(--accent); }
+    .mockup-card pre {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #8b949e;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <button id="debug-btn" onclick="toggleDebug()">🔧 Debug</button>
+
+  <nav id="top-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="../index.html">⚡ KiloCode CLI</a>
+      <ul class="nav-links">
+        <li><a href="../markdown_renderer.html?file=1_Real_Unknown/README.md">1_Real</a></li>
+        <li><a href="../markdown_renderer.html?file=2_Environment/README.md">2_Environment</a></li>
+        <li><a href="index.html">3_Simulation</a></li>
+        <li><a href="../markdown_renderer.html?file=4_Formula/README.md">4_Formula</a></li>
+        <li><a href="../markdown_renderer.html?file=5_Symbols/README.md">5_Symbols</a></li>
+        <li><a href="../markdown_renderer.html?file=6_Semblance/README.md">6_Semblance</a></li>
+        <li><a href="../markdown_renderer.html?file=7_Testing_Known/README.md">7_Testing</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="page">
+    <h1>🎨 Simulation</h1>
+    <p class="subtitle">The "Vision" — UI mockups and target experience for KiloCode CLI on Mac &amp; Windows</p>
+
+    <!-- CAROUSEL -->
+    <div class="carousel-wrap">
+      <div class="carousel-stage" id="carousel">
+
+        <div class="slide active">
+          <div class="mock">$ kilocode --version
+⚡ KiloCode CLI v1.0.0
+   Platform: darwin (Apple Silicon)
+   Node:     v20.11.0
+   Ollama:   ✓ connected (nomic-embed-text)
+   Qdrant:   ✓ connected (http://localhost:6333)</div>
+          <p class="caption">🖥 Slide 1: Successful installation on macOS — version check output</p>
+        </div>
+
+        <div class="slide">
+          <div class="mock">$ kilocode index .
+🔍 Scanning project...
+   Found 47 files (312 KB)
+   Embedding with nomic-embed-text (4096d)
+   ████████████████████ 47/47 files
+✅ Indexed in 8.3s → 147 vectors stored in Qdrant
+   Collection: kilocode_docs</div>
+          <p class="caption">📦 Slide 2: Project indexing — embedding all files into Qdrant</p>
+        </div>
+
+        <div class="slide">
+          <div class="mock">$ kilocode ask "how does auth work?"
+
+🔍 Searching 147 vectors...
+📎 Top matches:
+   1. src/auth/middleware.ts    (0.94)
+   2. src/auth/jwt.ts           (0.89)
+   3. docs/authentication.md   (0.82)
+
+💬 Answer:
+   Authentication uses JWT tokens validated in
+   middleware.ts. Tokens expire in 24h and are
+   refreshed via /api/refresh endpoint.</div>
+          <p class="caption">💬 Slide 3: Semantic search in action — asking about auth flow</p>
+        </div>
+
+        <div class="slide">
+          <div class="mock">PS C:\Users\dev> kilocode --version
+⚡ KiloCode CLI v1.0.0
+   Platform: win32 (x64)
+   Node:     v20.11.0
+   Ollama:   ✓ connected (nomic-embed-text)
+   Qdrant:   ✓ connected (http://localhost:6333)
+
+PS C:\Users\dev> kilocode ask "explain main.ts"
+🔍 Searching...
+📎 src/main.ts (0.97)
+💬 Entry point bootstraps the NestJS app...</div>
+          <p class="caption">🪟 Slide 4: Same experience on Windows PowerShell</p>
+        </div>
+
+        <div class="slide">
+          <div class="mock">$ kilocode config show
+┌────────────────────────────────────────┐
+│ KiloCode Configuration                 │
+├────────────────┬───────────────────────┤
+│ embeddings     │ ollama/nomic-embed-text│
+│ dimensions     │ 4096                  │
+│ vectordb       │ qdrant                │
+│ vectordb.host  │ localhost:6333        │
+│ auto-index     │ true                  │
+│ max-results    │ 5                     │
+└────────────────┴───────────────────────┘</div>
+          <p class="caption">⚙️ Slide 5: Configuration display — same config works on both platforms</p>
+        </div>
+
+      </div>
+      <div class="carousel-controls">
+        <button onclick="move(-1)">←</button>
+        <div class="dots" id="dots"></div>
+        <button onclick="move(1)">→</button>
+      </div>
+    </div>
+
+    <!-- MOCKUP CARDS -->
+    <h2 style="margin-bottom:1rem;font-size:1.1rem;color:var(--muted);">📐 UI Mockups</h2>
+    <div class="mockups-grid">
+      <div class="mockup-card">
+        <h3>🍎 Mac Terminal Flow</h3>
+        <pre>brew install ollama
+brew services start ollama
+ollama pull nomic-embed-text
+npm i -g kilocode
+kilocode config set ...
+kilocode index .
+kilocode ask "..."</pre>
+      </div>
+      <div class="mockup-card">
+        <h3>🪟 Windows PowerShell Flow</h3>
+        <pre>winget install Ollama
+ollama pull nomic-embed-text
+npm i -g kilocode
+kilocode config set ...
+kilocode index .
+kilocode ask "..."</pre>
+      </div>
+      <div class="mockup-card">
+        <h3>🐳 Docker Compose Stack</h3>
+        <pre>services:
+  qdrant:
+    image: qdrant/qdrant
+    ports: ["6333:6333"]
+    volumes:
+      - qdrant_data:/qdrant/storage</pre>
+      </div>
+      <div class="mockup-card">
+        <h3>🤖 Ollama + nomic-embed</h3>
+        <pre>ollama list
+NAME                SIZE
+nomic-embed-text    274 MB
+llama3.2:3b         2.0 GB
+
+Dims: 4096
+Speed: ~120ms/doc</pre>
+      </div>
+    </div>
+
+    <p style="margin-top:1rem"><a href="../markdown_renderer.html?file=3_Simulation/README.md" style="color:var(--accent)">📄 View full Simulation notes →</a></p>
+  </div>
+
+  <script>
+    const COOKIE = 'debug_mode';
+    function getCookie(n){return document.cookie.split('; ').reduce((a,c)=>{const[k,v]=c.split('=');return k===n?decodeURIComponent(v):a;},'');}
+    function setCookie(n,v,d){document.cookie=`${n}=${encodeURIComponent(v)};expires=${new Date(Date.now()+d*86400000).toUTCString()};path=/;SameSite=Lax`;}
+    function applyDebugState(){const on=getCookie(COOKIE)==='true';document.getElementById('top-nav').classList.toggle('visible',on);const b=document.getElementById('debug-btn');b.classList.toggle('active',on);b.textContent=on?'🔧 Debug ON':'🔧 Debug';}
+    function toggleDebug(){setCookie(COOKIE,String(getCookie(COOKIE)!=='true'),30);applyDebugState();}
+    applyDebugState();
+
+    // Carousel
+    const slides = document.querySelectorAll('.slide');
+    const dotsEl = document.getElementById('dots');
+    let current = 0;
+
+    slides.forEach((_,i) => {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i===0?' active':'');
+      d.onclick = () => goTo(i);
+      dotsEl.appendChild(d);
+    });
+
+    function goTo(n) {
+      slides[current].classList.remove('active');
+      dotsEl.children[current].classList.remove('active');
+      current = (n + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      dotsEl.children[current].classList.add('active');
+    }
+    function move(d) { goTo(current + d); }
+
+    // Auto-advance every 5s
+    setInterval(() => move(1), 5000);
+  </script>
+</body>
+</html>

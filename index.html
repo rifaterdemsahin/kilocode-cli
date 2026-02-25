@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ KiloCode CLI — Self-Learning System</title>
+  <meta name="description" content="Setup KiloCode CLI on Mac and Windows — a structured self-learning journey from Unknown to Proven." />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --danger: #f85149;
+      --warn: #d29922;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+      min-height: 100vh;
+    }
+
+    /* ── DEBUG BUTTON ── */
+    #debug-btn {
+      position: fixed;
+      bottom: 1.2rem;
+      right: 1.2rem;
+      z-index: 1000;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.45rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #debug-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #debug-btn.active { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── TOP NAV ── */
+    #top-nav {
+      display: none;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    #top-nav.visible { display: block; }
+
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-brand {
+      font-weight: 700;
+      color: var(--accent);
+      margin-right: 0.8rem;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      list-style: none;
+    }
+    .nav-links a {
+      display: inline-block;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      text-decoration: none;
+      color: var(--muted);
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .nav-links a:hover {
+      background: rgba(88,166,255,0.08);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 2rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(88,166,255,0.12);
+      border: 1px solid rgba(88,166,255,0.3);
+      color: var(--accent);
+      padding: 0.3rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #58a6ff, #3fb950);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      max-width: 640px;
+      margin: 0 auto 2rem;
+    }
+
+    /* ── SOCIAL LINKS ── */
+    .social-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 3rem;
+    }
+    .social-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: var(--surface);
+      transition: all 0.2s;
+    }
+    .social-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+    .social-btn.github:hover { border-color: #e6edf3; color: #e6edf3; }
+    .social-btn.linkedin:hover { border-color: #0a66c2; color: #0a66c2; }
+    .social-btn.youtube:hover { border-color: #ff0000; color: #ff0000; }
+
+    /* ── JOURNEY GRID ── */
+    .section-title {
+      max-width: 900px;
+      margin: 0 auto 1.2rem;
+      padding: 0 1.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .journey-grid {
+      max-width: 900px;
+      margin: 0 auto 3rem;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+    .journey-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .journey-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(88,166,255,0.1);
+    }
+    .journey-card .num {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: monospace;
+    }
+    .journey-card .icon { font-size: 1.4rem; }
+    .journey-card .title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .journey-card .subtitle {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .journey-card .tag {
+      margin-top: 0.4rem;
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(88,166,255,0.1);
+      color: var(--accent);
+      align-self: flex-start;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .journey-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- DEBUG TOGGLE BUTTON -->
+  <button id="debug-btn" onclick="toggleDebug()" title="Toggle debug navigation">🔧 Debug</button>
+
+  <!-- TOP NAV (shown only when debug cookie = true) -->
+  <nav id="top-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">⚡ KiloCode CLI</a>
+      <ul class="nav-links">
+        <li><a href="1_Real_Unknown/README.md">1_Real</a></li>
+        <li><a href="2_Environment/README.md">2_Environment</a></li>
+        <li><a href="3_Simulation/README.md">3_Simulation</a></li>
+        <li><a href="4_Formula/README.md">4_Formula</a></li>
+        <li><a href="5_Symbols/README.md">5_Symbols</a></li>
+        <li><a href="6_Semblance/README.md">6_Semblance</a></li>
+        <li><a href="7_Testing_Known/README.md">7_Testing</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">🧭 Self-Learning System</div>
+    <h1>⚡ KiloCode CLI Setup</h1>
+    <p>
+      A structured, 7-stage journey from <strong>Unknown → Proven</strong> for setting up
+      KiloCode CLI across Mac and Windows environments. Built with reproducibility in mind.
+    </p>
+
+    <!-- SOCIAL LINKS -->
+    <div class="social-row">
+      <a class="social-btn github" href="https://github.com/rifaterdemsahin/kilocode-cli" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.604-3.369-1.341-3.369-1.341-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+        GitHub Repo
+      </a>
+      <a class="social-btn linkedin" href="https://www.linkedin.com/in/rifaterdemsahin/" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+      <a class="social-btn youtube" href="https://www.youtube.com/@RifatErdemSahin" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        YouTube
+      </a>
+    </div>
+  </section>
+
+  <!-- JOURNEY GRID -->
+  <p class="section-title">The 7-Stage Journey</p>
+  <div class="journey-grid">
+    <a class="journey-card" href="markdown_renderer.html?file=1_Real_Unknown/README.md">
+      <span class="num">Stage 01</span>
+      <span class="icon">❓</span>
+      <span class="title">Real Unknown</span>
+      <span class="subtitle">Problem definitions, OKRs, and the core questions driving this project.</span>
+      <span class="tag">The "Why"</span>
+    </a>
+    <a class="journey-card" href="markdown_renderer.html?file=2_Environment/README.md">
+      <span class="num">Stage 02</span>
+      <span class="icon">🌍</span>
+      <span class="title">Environment</span>
+      <span class="subtitle">Roadmaps, constraints, and setup guides for Mac, Windows, and AI clients.</span>
+      <span class="tag">The "Context"</span>
+    </a>
+    <a class="journey-card" href="3_Simulation/index.html">
+      <span class="num">Stage 03</span>
+      <span class="icon">🎨</span>
+      <span class="title">Simulation</span>
+      <span class="subtitle">UI mockups and a dynamic image carousel showing the target vision.</span>
+      <span class="tag">The "Vision"</span>
+    </a>
+    <a class="journey-card" href="markdown_renderer.html?file=4_Formula/README.md">
+      <span class="num">Stage 04</span>
+      <span class="icon">📐</span>
+      <span class="title">Formula</span>
+      <span class="subtitle">Step-by-step guides, research notes, and the logic behind the build.</span>
+      <span class="tag">The "Recipe"</span>
+    </a>
+    <a class="journey-card" href="markdown_renderer.html?file=5_Symbols/README.md">
+      <span class="num">Stage 05</span>
+      <span class="icon">💻</span>
+      <span class="title">Symbols</span>
+      <span class="subtitle">Core source code — install scripts for Mac and Windows.</span>
+      <span class="tag">The "Reality"</span>
+    </a>
+    <a class="journey-card" href="markdown_renderer.html?file=6_Semblance/README.md">
+      <span class="num">Stage 06</span>
+      <span class="icon">🩹</span>
+      <span class="title">Semblance</span>
+      <span class="subtitle">Error logs, near-misses, workarounds — the gap between plan and reality.</span>
+      <span class="tag">The "Scars"</span>
+    </a>
+    <a class="journey-card" href="markdown_renderer.html?file=7_Testing_Known/README.md">
+      <span class="num">Stage 07</span>
+      <span class="icon">✅</span>
+      <span class="title">Testing Known</span>
+      <span class="subtitle">Validation against objectives, testing checklists, and outcome confirmation.</span>
+      <span class="tag">The "Proof"</span>
+    </a>
+  </div>
+
+  <footer>
+    Built with the <strong>Project Self-Learning System</strong> framework ·
+    <a href="https://github.com/rifaterdemsahin/kilocode-cli">github.com/rifaterdemsahin/kilocode-cli</a>
+  </footer>
+
+  <script>
+    const COOKIE = 'debug_mode';
+
+    function getCookie(name) {
+      return document.cookie.split('; ').reduce((acc, c) => {
+        const [k, v] = c.split('=');
+        return k === name ? decodeURIComponent(v) : acc;
+      }, '');
+    }
+
+    function setCookie(name, value, days) {
+      const exp = new Date(Date.now() + days * 86400000).toUTCString();
+      document.cookie = `${name}=${encodeURIComponent(value)};expires=${exp};path=/;SameSite=Lax`;
+    }
+
+    function applyDebugState() {
+      const isDebug = getCookie(COOKIE) === 'true';
+      document.getElementById('top-nav').classList.toggle('visible', isDebug);
+      const btn = document.getElementById('debug-btn');
+      btn.classList.toggle('active', isDebug);
+      btn.textContent = isDebug ? '🔧 Debug ON' : '🔧 Debug';
+    }
+
+    function toggleDebug() {
+      const current = getCookie(COOKIE) === 'true';
+      setCookie(COOKIE, String(!current), 30);
+      applyDebugState();
+    }
+
+    // Apply on load
+    applyDebugState();
+
+    // Also check ?debug=true in URL (one-shot enable)
+    if (new URLSearchParams(location.search).get('debug') === 'true') {
+      setCookie(COOKIE, 'true', 30);
+      applyDebugState();
+    }
+  </script>
+</body>
+</html>

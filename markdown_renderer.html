@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📄 Markdown Viewer — KiloCode CLI</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --code-bg: #1c2128;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── DEBUG BUTTON ── */
+    #debug-btn {
+      position: fixed;
+      bottom: 1.2rem;
+      right: 1.2rem;
+      z-index: 1000;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.45rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #debug-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #debug-btn.active { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── NAV ── */
+    #top-nav {
+      display: none;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    #top-nav.visible { display: block; }
+    .nav-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-brand { font-weight: 700; color: var(--accent); margin-right: 0.8rem; text-decoration: none; font-size: 0.9rem; }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 0.3rem; list-style: none; }
+    .nav-links a {
+      display: inline-block;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      text-decoration: none;
+      color: var(--muted);
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .nav-links a:hover { background: rgba(88,166,255,0.08); border-color: var(--accent); color: var(--accent); }
+
+    /* ── TOOLBAR ── */
+    #toolbar {
+      max-width: 900px;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+    #toolbar a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: color 0.15s;
+    }
+    #toolbar a:hover { color: var(--accent); }
+    #file-path {
+      flex: 1;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.75rem;
+    }
+
+    /* ── CONTENT ── */
+    #content {
+      max-width: 900px;
+      margin: 1.5rem auto 3rem;
+      padding: 0 1.5rem;
+    }
+    #loading { color: var(--muted); font-size: 0.9rem; }
+    #error-msg { color: #f85149; font-size: 0.9rem; }
+
+    /* ── MARKDOWN STYLES ── */
+    .md-body { line-height: 1.8; }
+    .md-body h1, .md-body h2, .md-body h3, .md-body h4 {
+      margin: 1.8rem 0 0.8rem;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+    }
+    .md-body h1 { font-size: 1.8rem; }
+    .md-body h2 { font-size: 1.35rem; }
+    .md-body h3 { font-size: 1.1rem; border: none; }
+    .md-body p { margin-bottom: 1rem; color: var(--text); }
+    .md-body a { color: var(--accent); }
+    .md-body ul, .md-body ol { margin: 0 0 1rem 1.5rem; }
+    .md-body li { margin-bottom: 0.3rem; }
+    .md-body code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.85em;
+      color: #ffa657;
+    }
+    .md-body pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1.2rem;
+    }
+    .md-body pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+    .md-body blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 1rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .md-body table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
+    .md-body th, .md-body td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.9rem;
+      text-align: left;
+    }
+    .md-body th { background: var(--surface); }
+    .md-body img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
+    .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  </style>
+</head>
+<body>
+
+  <button id="debug-btn" onclick="toggleDebug()" title="Toggle debug navigation">🔧 Debug</button>
+
+  <nav id="top-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">⚡ KiloCode CLI</a>
+      <ul class="nav-links">
+        <li><a href="markdown_renderer.html?file=1_Real_Unknown/README.md">1_Real</a></li>
+        <li><a href="markdown_renderer.html?file=2_Environment/README.md">2_Environment</a></li>
+        <li><a href="3_Simulation/index.html">3_Simulation</a></li>
+        <li><a href="markdown_renderer.html?file=4_Formula/README.md">4_Formula</a></li>
+        <li><a href="markdown_renderer.html?file=5_Symbols/README.md">5_Symbols</a></li>
+        <li><a href="markdown_renderer.html?file=6_Semblance/README.md">6_Semblance</a></li>
+        <li><a href="markdown_renderer.html?file=7_Testing_Known/README.md">7_Testing</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div id="toolbar">
+    <a href="index.html">🏠 Home</a>
+    <span style="color:var(--border)">›</span>
+    <span id="file-path">Loading…</span>
+  </div>
+
+  <div id="content">
+    <p id="loading">⏳ Loading markdown…</p>
+    <p id="error-msg" style="display:none"></p>
+    <div id="md-output" class="md-body"></div>
+  </div>
+
+  <script>
+    // ── Cookie helpers ──
+    const COOKIE = 'debug_mode';
+    function getCookie(n) {
+      return document.cookie.split('; ').reduce((a,c) => { const [k,v]=c.split('='); return k===n?decodeURIComponent(v):a; }, '');
+    }
+    function setCookie(n,v,d) {
+      document.cookie=`${n}=${encodeURIComponent(v)};expires=${new Date(Date.now()+d*86400000).toUTCString()};path=/;SameSite=Lax`;
+    }
+    function applyDebugState() {
+      const on = getCookie(COOKIE)==='true';
+      document.getElementById('top-nav').classList.toggle('visible',on);
+      const b=document.getElementById('debug-btn');
+      b.classList.toggle('active',on);
+      b.textContent=on?'🔧 Debug ON':'🔧 Debug';
+    }
+    function toggleDebug(){setCookie(COOKIE,String(getCookie(COOKIE)!=='true'),30);applyDebugState();}
+    applyDebugState();
+
+    // ── Tiny Markdown parser ──
+    function md2html(text) {
+      let h = text
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/```(\w*)\n([\s\S]*?)```/g, (_,lang,code)=>`<pre><code class="language-${lang}">${code}</code></pre>`)
+        .replace(/`([^`]+)`/g,'<code>$1</code>')
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1">')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2">$1</a>')
+        .replace(/^#{6}\s(.+)/gm,'<h6>$1</h6>')
+        .replace(/^#{5}\s(.+)/gm,'<h5>$1</h5>')
+        .replace(/^#{4}\s(.+)/gm,'<h4>$1</h4>')
+        .replace(/^#{3}\s(.+)/gm,'<h3>$1</h3>')
+        .replace(/^#{2}\s(.+)/gm,'<h2>$1</h2>')
+        .replace(/^#\s(.+)/gm,'<h1>$1</h1>')
+        .replace(/^\*\*\*|^---/gm,'<hr>')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/^>\s(.+)/gm,'<blockquote>$1</blockquote>')
+        .replace(/^[-*]\s(.+)/gm,'<li>$1</li>')
+        .replace(/^\d+\.\s(.+)/gm,'<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/gs, m=>`<ul>${m}</ul>`)
+        .replace(/\n\n/g,'</p><p>')
+        .replace(/\n/g,'<br>');
+      return `<p>${h}</p>`;
+    }
+
+    // ── Load file ──
+    const params = new URLSearchParams(location.search);
+    const file = params.get('file') || '';
+    document.getElementById('file-path').textContent = file || '(no file specified)';
+    document.title = `📄 ${file} — KiloCode CLI`;
+
+    if (file) {
+      fetch(file)
+        .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+        .then(text => {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('md-output').innerHTML = md2html(text);
+        })
+        .catch(err => {
+          document.getElementById('loading').style.display = 'none';
+          const e = document.getElementById('error-msg');
+          e.style.display = 'block';
+          e.textContent = `❌ Could not load "${file}": ${err.message}`;
+        });
+    } else {
+      document.getElementById('loading').textContent = '⚠️ No file specified. Use ?file=path/to/file.md';
+    }
+  </script>
+</body>
+</html>
