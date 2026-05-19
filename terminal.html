@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🖥 Kilo Terminal — Web Command Center</title>
+  <title>🖥 Kilo Command Center — Browser Command Previewer</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -291,10 +291,10 @@
 
   <header>
     <a href="index.html" class="brand">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.604-3.369-1.341-3.369-1.341-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent)"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h4v2H6v-2zm0 4h8v2H6v-2z"/></svg>
       <div>
-        <h1>Kilo Terminal</h1>
-        <span>Web Command Center</span>
+        <h1>Kilo Command Center</h1>
+        <span>Browser Command Previewer</span>
       </div>
     </a>
     <div id="key-status">
@@ -308,23 +308,23 @@
     <aside class="sidebar">
       <div class="panel">
         <h3>⚡ Quick Actions</h3>
-        <button class="cmd-btn" onclick="setCmd('kilo --version')">
+        <button class="cmd-btn" onclick="runCmd('kilo --version')">
           kilo --version
           <small>Check installed version</small>
         </button>
-        <button class="cmd-btn" onclick="setCmd('kilo run \"explain this codebase\"')">
+        <button class="cmd-btn" onclick="runCmd('kilo run &quot;explain this codebase&quot;')">
           kilo run "explain…"
           <small>One-off task mode</small>
         </button>
-        <button class="cmd-btn" onclick="setCmd('kilo --mode architect')">
+        <button class="cmd-btn" onclick="runCmd('kilo --mode architect')">
           kilo --mode architect
           <small>Plan and design mode</small>
         </button>
-        <button class="cmd-btn" onclick="setCmd('kilo --mode debug')">
+        <button class="cmd-btn" onclick="runCmd('kilo --mode debug')">
           kilo --mode debug
           <small>Debug issues mode</small>
         </button>
-        <button class="cmd-btn" onclick="setCmd('kilo --continue')">
+        <button class="cmd-btn" onclick="runCmd('kilo --continue')">
           kilo --continue
           <small>Resume last session</small>
         </button>
@@ -332,15 +332,15 @@
 
       <div class="panel">
         <h3>☁️ Fly.io Remote</h3>
-        <button class="cmd-btn" onclick="setCmd('ssh -p 2222 root@kilo-remote.fly.dev')">
+        <button class="cmd-btn" onclick="runCmd('ssh -p 2222 root@kilo-remote.fly.dev')">
           SSH to Fly VM
           <small>Connect from anywhere</small>
         </button>
-        <button class="cmd-btn" onclick="setCmd('flyctl logs --app kilo-remote')">
+        <button class="cmd-btn" onclick="runCmd('flyctl logs --app kilo-remote')">
           flyctl logs
           <small>View VM logs</small>
         </button>
-        <button class="cmd-btn" onclick="setCmd('flyctl status --app kilo-remote')">
+        <button class="cmd-btn" onclick="runCmd('flyctl status --app kilo-remote')">
           flyctl status
           <small>Check machine health</small>
         </button>
@@ -365,12 +365,19 @@
           <span class="dot red"></span>
           <span class="dot yellow"></span>
           <span class="dot green"></span>
-          <span style="margin-left:auto">bash — kilo-remote</span>
+          <span style="margin-left:auto">bash — kilo-remote (preview)</span>
         </div>
         <div id="term-body">
-          <div class="line out">Welcome to Kilo Terminal — Web Command Center</div>
-          <div class="line out">Click "Set Key" to store your Kilo API key securely in browser storage.</div>
-          <div class="line out">This page generates commands you can copy and run locally or on your Fly VM.</div>
+          <div class="line out">Welcome to Kilo Command Center — a browser-based command previewer.</div>
+          <div class="line out"></div>
+          <div class="line warn">⚠️  This is NOT a real terminal. It previews commands you can copy and run locally or on your Fly VM.</div>
+          <div class="line out"></div>
+          <div class="line out">How to use:</div>
+          <div class="line out">  1. Click "Set Key" to save your Kilo API key (stored in browser only).</div>
+          <div class="line out">  2. Pick a Quick Action or type a command below.</div>
+          <div class="line out">  3. Press Enter to see a preview of what the output would look like.</div>
+          <div class="line out">  4. Click "📋 Copy" to copy the command to your clipboard.</div>
+          <div class="line out">  5. Paste and run it in your actual terminal or SSH into your Fly VM.</div>
           <div class="line out"></div>
           <div class="line out">GitHub Pages: <a href="https://rifaterdemsahin.github.io/kilocode-cli/" style="color:var(--accent)">https://rifaterdemsahin.github.io/kilocode-cli/</a></div>
           <div class="line out"></div>
@@ -453,22 +460,112 @@
       log('API key saved to browser storage (' + val.length + ' characters).', 'ok');
     }
 
-    function log(text, cls = 'out') {
+    function log(text, cls) {
       const body = document.getElementById('term-body');
       const div = document.createElement('div');
-      div.className = 'line ' + cls;
+      div.className = 'line ' + (cls || 'out');
       div.textContent = text;
       body.appendChild(div);
       body.scrollTop = body.scrollHeight;
     }
 
-    function setCmd(cmd) {
+    function setCmd(cmd, silent) {
       currentCommand = cmd;
       const display = document.getElementById('current-cmd');
       display.textContent = cmd;
       display.style.color = 'var(--text)';
-      log('$ ' + cmd, 'cmd');
+      if (!silent) log('$ ' + cmd, 'cmd');
     }
+
+    function runCmd(cmd) {
+      setCmd(cmd, true);
+      simulateResponse(cmd);
+    }
+
+    function simulateResponse(cmd) {
+      const key = getKey();
+      const c = cmd.trim();
+
+      // --- kilo version ---
+      if (/^kilo\s*(--version|-v)/.test(c)) {
+        log('kilo version 1.0.0 (npm @kilocode/cli)', 'ok');
+        log('Node 20.12.0 · Darwin arm64', 'out');
+        return;
+      }
+
+      // --- kilo run ---
+      if (/^kilo run /i.test(c)) {
+        const prompt = c.replace(/^kilo run\s+/, '').replace(/^["']|["']$/g, '');
+        if (!key) {
+          log('⚠️  No API key set. Click "Set Key" above to configure your Kilo credentials.', 'warn');
+          return;
+        }
+        log('⏳ Sending request to kilo.ai…', 'out');
+        setTimeout(() => {
+          log('✅ Response received (' + prompt.length + ' chars prompt)', 'ok');
+          log('', 'out');
+          log('─ Kilo AI Response ─', 'out');
+          log('Based on your request: "' + prompt.substring(0, 60) + (prompt.length > 60 ? '…' : '') + '"', 'out');
+          log('• Analysis complete. No files were modified (preview mode).', 'out');
+          log('• To execute this for real, copy the command and run it in your terminal.', 'out');
+          log('', 'out');
+        }, 600);
+        return;
+      }
+
+      // --- kilo (interactive TUI) ---
+      if (/^kilo\s*$/.test(c) || /^kilo\s+(--mode|-m)/i.test(c)) {
+        log('ℹ️  Interactive TUI mode cannot run in the browser.', 'warn');
+        log('    Copy this command and run it in your terminal:', 'out');
+        log('    ' + c, 'cmd');
+        return;
+      }
+
+      // --- kilo continue ---
+      if (/^kilo\s+--continue/i.test(c)) {
+        if (!key) {
+          log('⚠️  No API key set. Click "Set Key" above.', 'warn');
+          return;
+        }
+        log('ℹ️  Resumes the last Kilo session from ~/.kilo/sessions/', 'out');
+        log('    Copy and run locally:', 'out');
+        log('    ' + c, 'cmd');
+        return;
+      }
+
+      // --- ssh ---
+      if (/^ssh\b/i.test(c)) {
+        log('🔐 SSH connection preview:', 'ok');
+        log('  Host: kilo-remote.fly.dev', 'out');
+        log('  Port: 2222', 'out');
+        log('  User: root', 'out');
+        log('  Auth: ~/.ssh/id_ed25519', 'out');
+        log('', 'out');
+        log('  To connect, copy and run in your local terminal:', 'out');
+        log('  ' + c, 'cmd');
+        return;
+      }
+
+      // --- flyctl ---
+      if (/^flyctl\b/i.test(c)) {
+        log('☁️  Fly.io CLI preview:', 'ok');
+        log('  This command interacts with your Fly.io account.', 'out');
+        log('  Requires flyctl installed locally and authenticated.', 'out');
+        log('', 'out');
+        log('  Copy and run locally:', 'out');
+        log('  ' + c, 'cmd');
+        return;
+      }
+
+      // --- unknown command ---
+      log('ℹ️  Command preview: "' + c + '"', 'out');
+      log('', 'out');
+      log('This is a browser-based command previewer — commands are NOT executed here.', 'warn');
+      log('Copy the command above and run it in:', 'out');
+      log('  • Your local terminal (Mac / Windows / Linux)', 'out');
+      log('  • Your Fly VM via SSH: ssh -p 2222 root@kilo-remote.fly.dev', 'out');
+    }
+
     function clearCmd() {
       currentCommand = '';
       document.getElementById('current-cmd').textContent = 'Select a quick action or type a command…';
@@ -484,6 +581,7 @@
         const val = this.value.trim();
         if (!val) return;
         setCmd(val);
+        simulateResponse(val);
         this.value = '';
       }
     });
