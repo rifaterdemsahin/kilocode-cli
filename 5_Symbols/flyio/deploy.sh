@@ -54,10 +54,20 @@ if [ -z "$API_KEY" ]; then
     exit 1
 fi
 
-# --- push secret to Fly.io -----------------------------------------------------
+# --- push secrets to Fly.io ----------------------------------------------------
 
-echo "🔒 Injecting secret into Fly.io app '$FLY_APP_NAME'..."
+echo "🔒 Injecting KILO_API_KEY into Fly.io app '$FLY_APP_NAME'..."
 printf '%s' "$API_KEY" | flyctl secrets set KILO_API_KEY=- --app "$FLY_APP_NAME"
+
+# Set a random TTYD_PASSWORD if not already present
+if ! flyctl secrets list --app "$FLY_APP_NAME" | grep -q "TTYD_PASSWORD"; then
+    RAND_PASS=$(openssl rand -base64 24 2>/dev/null || head -c 32 /dev/urandom | base64)
+    echo "🔒 Setting random TTYD_PASSWORD for browser terminal auth..."
+    printf '%s' "$RAND_PASS" | flyctl secrets set TTYD_PASSWORD=- --app "$FLY_APP_NAME"
+    echo "   (To see it later: flyctl secrets list --app $FLY_APP_NAME)"
+else
+    echo "🔒 TTYD_PASSWORD already set."
+fi
 
 # --- provision volume (idempotent) ---------------------------------------------
 
@@ -79,8 +89,12 @@ flyctl deploy --app "$FLY_APP_NAME"
 echo ""
 echo "✅ Done!"
 echo ""
-echo "   Connect via SSH:"
+echo "   SSH (from terminal):"
 echo "   ssh -p 2222 root://${FLY_APP_NAME}.fly.dev"
+echo ""
+echo "   Browser Terminal (real bash in browser):"
+echo "   https://${FLY_APP_NAME}.fly.dev"
+echo "   (Login: root / TTYD_PASSWORD from flyctl secrets list)"
 echo ""
 echo "   After connecting, run:"
 echo "   kilo --version"

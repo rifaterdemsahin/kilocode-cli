@@ -13,7 +13,6 @@ if [ -f /root/.ssh/authorized_keys ]; then
 fi
 
 # If KILO_API_KEY is provided as a Fly secret, log confirmation
-# (Kilo CLI reads it automatically from the environment on its next invocation)
 if [ -n "${KILO_API_KEY:-}" ]; then
     echo "✓ KILO_API_KEY is set (length: ${#KILO_API_KEY})"
 else
@@ -25,5 +24,26 @@ if [ -d /root/projects ]; then
     chown root:root /root/projects || true
 fi
 
+# Start SSH daemon in the background
 echo "Starting SSH daemon on port 2222..."
-exec /usr/sbin/sshd -D -p 2222
+/usr/sbin/sshd -D -p 2222 &
+
+# Start ttyd (real browser terminal) on port 7681
+# If TTYD_PASSWORD is set, require authentication
+echo "Starting ttyd (browser terminal) on port 7681..."
+if [ -n "${TTYD_PASSWORD:-}" ]; then
+    exec /usr/local/bin/ttyd \
+        --port 7681 \
+        --credential "root:${TTYD_PASSWORD}" \
+        --check-origin \
+        --signal SIGINT \
+        bash
+else
+    echo "⚠ TTYD_PASSWORD not set — browser terminal will be open (no auth)."
+    echo "  Set it with: flyctl secrets set TTYD_PASSWORD=<strong-password>"
+    exec /usr/local/bin/ttyd \
+        --port 7681 \
+        --check-origin \
+        --signal SIGINT \
+        bash
+fi

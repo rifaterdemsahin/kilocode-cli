@@ -21,3 +21,18 @@ primary_region = "lhr"
   [[services.ports]]
     port = 2222
     handlers = []
+
+[[services]]
+  internal_port = 7681
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
