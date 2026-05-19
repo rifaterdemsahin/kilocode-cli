@@ -2,8 +2,10 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV KILO_CONFIG_DIR=/root/.config/kilo
+ENV TERM=xterm-256color
+ENV NODE_NO_WARNINGS=1
 
-# Install core dependencies, Node.js 20, Kilo CLI, and ttyd (real browser terminal)
+# Install core dependencies, Node.js 20, Kilo CLI, ttyd, and diagnostic tools
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
@@ -12,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     openssh-server \
     nano \
     vim \
+    iputils-ping \
+    dnsutils \
+    netcat-openbsd \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
@@ -27,6 +32,9 @@ RUN apt-get update && apt-get install -y \
     && chmod +x /usr/local/bin/ttyd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Verify kilo binary exists and is executable
+RUN which kilo && kilo --version
 
 # SSH runtime directories
 RUN mkdir -p /var/run/sshd /root/.ssh \

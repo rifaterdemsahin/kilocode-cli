@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Export terminal environment for TUI apps (kilo, etc.)
+export TERM=xterm-256color
+export COLUMNS=${COLUMNS:-80}
+export LINES=${LINES:-24}
+
 # Ensure SSH host keys exist (regenerated on first boot if missing)
 if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
     ssh-keygen -A
@@ -40,12 +45,12 @@ if [ -n "${TTYD_PASSWORD:-}" ]; then
         --port 7681 \
         --credential "root:${TTYD_PASSWORD}" \
         --writable \
-        bash
+        bash -c 'export TERM=xterm-256color COLUMNS=80 LINES=24; exec bash'
 else
     echo "⚠ TTYD_PASSWORD not set — browser terminal will be open (no auth)."
     echo "  Set it with: flyctl secrets set TTYD_PASSWORD=<strong-password>"
     exec /usr/local/bin/ttyd \
         --port 7681 \
         --writable \
-        bash
+        bash -c 'export TERM=xterm-256color COLUMNS=80 LINES=24; exec bash'
 fi

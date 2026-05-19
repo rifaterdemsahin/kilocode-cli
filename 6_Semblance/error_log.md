@@ -158,4 +158,41 @@ The `install_mac.sh` script's `npm install -g kilocode` step should be removed o
 
 ---
 
+## F01: Kilo CLI Hangs in Fly.io VM + Missing Network Tools
+
+**Date:** 2026-05-19
+**Platform:** Fly.io Machine (Ubuntu 24.04 Docker container)
+**Symptom:** `kilo` and `kilo --version` hang indefinitely in browser terminal (ttyd); `ping` command not found
+
+**Full Error:**
+```bash
+root@48e4535b96d4e8:/# kilo
+^C^C
+root@48e4535b96d4e8:/# kilo --version
+^C
+root@48e4535b96d4e8:/# ping 1.1.1.1
+bash: ping: command not found
+```
+
+**Root Cause (ping):** Ubuntu 24.04 minimal Docker image does not include `iputils-ping` by default.
+
+**Root Cause (kilo hang):** `kilo` is a Node.js TUI CLI. In ttyd's web terminal, TTY detection (`process.stdin.isTTY`, `ioctl` for window size) can behave differently than a standard terminal. Without explicit `TERM`, `COLUMNS`, and `LINES` environment variables, the TUI library may block waiting for terminal initialization. This affects even `kilo --version` which likely does TTY probing before printing.
+
+**Evidence:**
+- `kilo --version` works during Docker build (output `7.3.1`) — Docker build has a pseudo-TTY
+- `kilo --version` hangs in ttyd — ttyd's interactive TTY differs from Docker's
+
+**Fix:**
+1. Add `iputils-ping`, `dnsutils`, and `netcat-openbsd` to Dockerfile for network diagnostics
+2. Set `ENV TERM=xterm-256color` in Dockerfile
+3. In entrypoint, export `COLUMNS=80` and `LINES=24` before starting ttyd
+4. Pass these through ttyd command: `bash -c 'export TERM=xterm-256color COLUMNS=80 LINES=24; exec bash'`
+
+**Prevention:**
+- Always include common network tools in remote VM Dockerfiles
+- For TUI Node.js CLIs, always set `TERM`, `COLUMNS`, `LINES` explicitly in container environments
+- Test CLI binaries inside the actual target terminal (ttyd), not just during Docker build
+
+---
+
 *[← Back to Semblance](../markdown_renderer.html?file=6_Semblance/README.md)*
