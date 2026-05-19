@@ -1,0 +1,23 @@
+app = "kilo-remote"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  KILO_CONFIG_DIR = "/root/.config/kilo"
+
+[mounts]
+  source = "kilo_data"
+  destination = "/root/projects"
+
+[[services]]
+  internal_port = 2222
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 2222
+    handlers = []

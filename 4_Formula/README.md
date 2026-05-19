@@ -26,10 +26,11 @@
 - [ ] `kilocode_docs` collection created (4096 dims, Cosine)
 
 ### Phase 4: KiloCode CLI
-- [ ] KiloCode CLI installed globally (`npm i -g kilocode`)
-- [ ] Configuration set (embeddings + vectordb)
-- [ ] `kilocode doctor` passes all checks
-- [ ] First project indexed successfully
+- [ ] KiloCode CLI installed globally (`npm i -g @kilocode/cli`)
+- [ ] Configuration set (provider + API key)
+- [ ] `kilo --version` prints a version number
+- [ ] `kilo` opens the TUI successfully
+- [ ] First project session working
 
 ---
 
@@ -91,7 +92,9 @@
 |------|---------|
 | `README.md` | Master checklist + logic |
 | `installation_steps.md` | Detailed step-by-step |
-| `research_notes.md` | Technical research & decisions |
+| `alternatives.md` | Terminal AI alternatives + xAI setup |
+| `run_kilocode_mac.md` | Mac-specific KiloCode guide |
+| `flyio_deployment.md` | Authoritative formula for Fly.io remote VM |
 
 ---
 

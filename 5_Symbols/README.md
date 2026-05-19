@@ -13,6 +13,7 @@
 | `setup_qdrant.sh` | Mac/Linux | Qdrant Docker setup |
 | `docker-compose.yml` | Both | Full AI stack compose file |
 | `verify.sh` | Mac/Linux | Health check all services |
+| `flyio/` | Fly.io | Remote Kilo CLI VM (SSH from phone) |
 
 ---
 

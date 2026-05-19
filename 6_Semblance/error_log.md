@@ -86,4 +86,76 @@ curl -X PUT http://localhost:6333/collections/kilocode_docs \
 
 ---
 
+## M02: kilocode Command Not Found on Mac (First Run)
+
+**Date:** 2026-02-25
+**Platform:** macOS, zsh
+**Symptom:** Running `kilocode` in terminal immediately after cloning the repo
+
+**Full Error:**
+```
+zsh: command not found: kilocode
+```
+
+**Root Cause:** The KiloCode CLI npm package has not been installed yet.
+Cloning the repo does not install the CLI — the installer script must be run first.
+
+**Fix:**
+```bash
+# Option 1: Run the full installer (recommended — sets up all dependencies)
+chmod +x 5_Symbols/install_mac.sh && ./5_Symbols/install_mac.sh
+
+# Option 2: Install only the CLI (if Node.js is already installed)
+npm install -g kilocode
+```
+
+**Prevention:** README should clarify that cloning alone is not enough —
+the installer must be run before using the `kilocode` command.
+
+---
+
+## M03: npm install -g kilocode — No CLI Binary Created
+
+**Date:** 2026-02-25
+**Platform:** macOS, nvm (Node.js v22.22.0)
+**Symptom:** `npm install -g kilocode` succeeds but `kilocode` command still not found
+
+**Full Error:**
+```
+zsh: command not found: kilocode
+```
+
+**Root Cause:** The published `kilocode@1.2.0` npm package is an unofficial placeholder.
+Its `package.json` has no `bin` field, so npm creates no command-line binary.
+The package contains only `index.js` (empty) and a README saying "# testing".
+
+**Diagnosis steps:**
+```bash
+npm list -g --depth=0           # shows kilocode@1.2.0 installed
+ls $(npm config get prefix)/bin # kilocode binary NOT present
+cat ~/.nvm/versions/node/.../lib/node_modules/kilocode/package.json
+# confirms: no "bin" entry
+```
+
+**Fix — exit and reopen terminal first, then:**
+```bash
+# Uninstall the placeholder
+npm uninstall -g kilocode
+
+# KiloCode is actually a VS Code extension, not a standalone npm CLI.
+# Install the VS Code extension instead:
+# 1. Open VS Code
+# 2. Extensions panel → search "Kilo Code"
+# 3. Install the official extension
+```
+
+**Note on terminal restart:** After npm global installs, always open a new terminal
+session (or run `source ~/.zshrc`) before testing a new command. The shell PATH
+cache may not reflect new binaries added during the current session.
+
+**Prevention:** Clarify in docs that KiloCode is a VS Code extension, not an npm CLI.
+The `install_mac.sh` script's `npm install -g kilocode` step should be removed or corrected.
+
+---
+
 *[← Back to Semblance](../markdown_renderer.html?file=6_Semblance/README.md)*
