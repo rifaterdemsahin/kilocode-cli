@@ -76,7 +76,8 @@ if ! flyctl volumes list --app "$FLY_APP_NAME" | grep -q "$VOLUME_NAME"; then
     flyctl volumes create "$VOLUME_NAME" \
         --region "$FLY_REGION" \
         --size "$VOLUME_SIZE" \
-        --app "$FLY_APP_NAME"
+        --app "$FLY_APP_NAME" \
+        --yes
 else
     echo "💾 Volume '$VOLUME_NAME' already exists."
 fi
