@@ -130,7 +130,45 @@ RUN echo 'alias kilo="tmux new-session -A -s kilo -n kilo kilo"' >> /root/.bashr
 
 ---
 
-### Fix #6: SSH Access (Working)
+### Fix #6: `script` Utility (Failed)
+
+**Tried:** Use `script` to create a pseudo-TTY without tmux overhead
+
+```bash
+script -q -c "kilo --version" /dev/null
+```
+
+**Result:** `script` creates a proper PTY using `/dev/ptmx`, but the Go binary **still hangs** inside it. This proved the issue is not simply "no TTY available" — the Go binary is incompatible with xterm.js's terminal emulation specifically.
+
+---
+
+### Fix #7: TTY Detection Wrapper (Latest Attempt)
+
+**Tried:** Create `/usr/local/bin/kilo-ttyd-wrapper` that detects if stdout is a real terminal
+
+```bash
+#!/bin/bash
+KILO_REAL_BIN="/usr/lib/node_modules/@kilocode/cli/node_modules/@kilocode/cli-linux-x64/bin/kilo"
+
+# Check if stdout is a terminal AND TERM is not dumb
+if [ ! -t 1 ] || [ "${TERM:-}" = "dumb" ]; then
+    # Not a real terminal (e.g., ttyd web terminal) — run without TUI
+    exec "$KILO_REAL_BIN" "$@" 2>&1
+fi
+
+# Real terminal (e.g., SSH session) — run with full TUI
+exec "$KILO_REAL_BIN" "$@"
+```
+
+**Result:** Deployed. Testing needed. If stdout is not a TTY, the binary is run directly; this may force the Go binary into non-interactive mode (some binaries check `isatty(stdout)` to decide TUI vs plain text).
+
+**Aliases added:**
+- `k` → `kilo-ttyd-wrapper` (short command for browser terminal)
+- `kt` → `tmux new-session -A -s kilo -n kilo kilo` (for full TUI in tmux)
+
+---
+
+### Fix #8: SSH Access (Working)
 
 **Tried:** SSH from local Mac terminal
 
@@ -166,6 +204,7 @@ ssh -p 2222 root@kilo-remote.fly.dev
 | **SSH from Mac/PC** | `ssh -p 2222 root@kilo-remote.fly.dev` then `kilo` | ✅ Perfect |
 | **tmux in browser** | `tmux new-session "kilo --version"` | ✅ Works |
 | **Direct binary in tmux** | `/usr/lib/.../cli-linux-x64/bin/kilo --version` inside tmux | ✅ Works |
+| **TTY wrapper in browser** | `kilo-ttyd-wrapper --version` or `k --version` | ⚠️ Deployed, needs testing |
 | **Browser terminal direct** | `kilo --version` | ❌ Hangs |
 | **Browser terminal with alias** | `kilo` (alias to tmux) | ⚠️ Starts tmux but UI may not fully render |
 
@@ -175,7 +214,11 @@ ssh -p 2222 root@kilo-remote.fly.dev
 
 ### For quick commands (browser terminal):
 ```bash
-# Use tmux explicitly
+# Use the ttyd wrapper (forces non-TUI mode)
+kilo-ttyd-wrapper --version
+k --version        # short alias
+
+# Or use tmux explicitly
 # This creates a temporary tmux session, runs kilo, then exits
 tmux new-session "kilo run 'explain this codebase'"
 ```
@@ -191,7 +234,7 @@ kilo --mode architect   # plan mode
 kilo --continue         # resume session
 ```
 
-### For one-off tasks:
+### For one-off tasks in browser:
 ```bash
 # These may work even in browser if they bypass TUI init
 KILO_NONINTERACTIVE=1 kilo run "refactor this"   # depends on binary behavior
@@ -203,9 +246,10 @@ KILO_NONINTERACTIVE=1 kilo run "refactor this"   # depends on binary behavior
 
 | File | Changes |
 |------|---------|
-| `Dockerfile` | Added tmux, CI env, binary cache, .bashrc colors |
+| `Dockerfile` | Added tmux, CI env, binary cache, .bashrc colors, ttyd wrapper |
 | `entrypoint.sh` | TTY exports, tmux-ready environment |
 | `fly.toml` | http_service for ttyd HTTPS |
+| `kilo-ttyd-wrapper` | New script: detects limited terminal, forces non-TUI mode |
 | `6_Semblance/error_log.md` | F01: Kilo hang error log |
 | `4_Formula/flyio_tty_fix.md` | TTY fix documentation |
 | `4_Formula/flyio_deployment.md` | Deployment steps |
@@ -219,6 +263,8 @@ KILO_NONINTERACTIVE=1 kilo run "refactor this"   # depends on binary behavior
 3. **tmux is a lifesaver** — Creates a proper PTY inside containers where TUI apps work
 4. **SSH is still king** — For anything beyond basic shell commands, native SSH provides the best terminal emulation
 5. **Test the actual binary, not the wrapper** — The Node.js wrapper masked that the issue was in the Go binary
+6. **`script` doesn't fix everything** — Even a proper PTY via `script` didn't help; xterm.js emulation is the real bottleneck
+7. **TTY detection wrappers are worth trying** — Some binaries check `isatty()` and change behavior; forcing non-TTY mode may enable plain text output
 
 ---
 

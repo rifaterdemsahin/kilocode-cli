@@ -1,0 +1,17 @@
+#!/bin/bash
+# kilo-ttyd-wrapper — runs kilo CLI in a way that works inside ttyd browser terminal
+# The Go TUI binary hangs in ttyd due to incomplete TTY support, so we:
+# 1. Detect if stdout is a real terminal
+# 2. If not, run the binary directly (forces non-TUI/plain text mode)
+# 3. If yes, run normally (for SSH sessions with full PTY)
+
+KILO_REAL_BIN="/usr/lib/node_modules/@kilocode/cli/node_modules/@kilocode/cli-linux-x64/bin/kilo"
+
+# Check if stdout is a terminal AND TERM is not dumb
+if [ ! -t 1 ] || [ "${TERM:-}" = "dumb" ]; then
+    # Not a real terminal (e.g., ttyd web terminal) — run without TUI
+    exec "$KILO_REAL_BIN" "$@" 2>&1
+fi
+
+# Real terminal (e.g., SSH session) — run with full TUI
+exec "$KILO_REAL_BIN" "$@"
