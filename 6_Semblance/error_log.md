@@ -176,17 +176,15 @@ bash: ping: command not found
 
 **Root Cause (ping):** Ubuntu 24.04 minimal Docker image does not include `iputils-ping` by default.
 
-**Root Cause (kilo hang):** `kilo` is a Node.js TUI CLI. In ttyd's web terminal, TTY detection (`process.stdin.isTTY`, `ioctl` for window size) can behave differently than a standard terminal. Without explicit `TERM`, `COLUMNS`, and `LINES` environment variables, the TUI library may block waiting for terminal initialization. This affects even `kilo --version` which likely does TTY probing before printing.
-
-**Evidence:**
-- `kilo --version` works during Docker build (output `7.3.1`) — Docker build has a pseudo-TTY
-- `kilo --version` hangs in ttyd — ttyd's interactive TTY differs from Docker's
+**Root Cause (kilo hang):** `kilo` is a Node.js wrapper that spawns a platform-specific compiled binary with `stdio: "inherit"`. In ttyd's web terminal, the Go-based TUI binary appears to hang during TTY initialization (likely waiting for terminal readiness or raw mode setup). Even `kilo --version` hangs because the wrapper uses `spawnSync` which blocks until the child exits.
 
 **Fix:**
 1. Add `iputils-ping`, `dnsutils`, and `netcat-openbsd` to Dockerfile for network diagnostics
-2. Set `ENV TERM=xterm-256color` in Dockerfile
-3. In entrypoint, export `COLUMNS=80` and `LINES=24` before starting ttyd
-4. Pass these through ttyd command: `bash -c 'export TERM=xterm-256color COLUMNS=80 LINES=24; exec bash'`
+2. Set `ENV CI=true` and `ENV TERM=xterm-256color` in Dockerfile — `CI=true` disables interactive TUI mode in many modern CLIs
+3. Cache the actual kilo binary path as `.kilo` symlink to bypass wrapper's `findBinary()` search
+4. In entrypoint, export `CI=true` and `KILO_NONINTERACTIVE=1` before starting ttyd
+5. Pass these env vars through ttyd command: `bash -c 'export TERM=... CI=true ...; exec bash'`
+6. Add colorful bash prompt (`PS1`, `LS_COLORS`, aliases) to `.bashrc`
 
 **Prevention:**
 - Always include common network tools in remote VM Dockerfiles

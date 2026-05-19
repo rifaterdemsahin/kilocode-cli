@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV KILO_CONFIG_DIR=/root/.config/kilo
 ENV TERM=xterm-256color
 ENV NODE_NO_WARNINGS=1
+ENV CI=true
 
 # Install core dependencies, Node.js 20, Kilo CLI, ttyd, and diagnostic tools
 RUN apt-get update && apt-get install -y \
@@ -33,8 +34,24 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Verify kilo binary exists and is executable
+# Cache the kilo binary path to speed up wrapper startup
+RUN KILO_REAL=$(find /usr/lib/node_modules -name kilo -path '*/@kilocode/cli-linux*/bin/*' -print -quit 2>/dev/null) \
+    && if [ -n "$KILO_REAL" ]; then \
+         ln -sf "$KILO_REAL" /usr/lib/node_modules/@kilocode/cli/.kilo; \
+         echo "Cached kilo binary: $KILO_REAL"; \
+       else \
+         echo "⚠ No cached kilo binary found — wrapper will search on each run"; \
+       fi
+
+# Verify kilo binary works
 RUN which kilo && kilo --version
+
+# Colorful bash prompt for the browser terminal
+RUN echo 'export PS1="\[\e[1;32m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ "' >> /root/.bashrc \
+    && echo 'export LS_COLORS="rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32"' >> /root/.bashrc \
+    && echo 'alias ls="ls --color=auto"' >> /root/.bashrc \
+    && echo 'alias ll="ls -la --color=auto"' >> /root/.bashrc \
+    && echo 'alias grep="grep --color=auto"' >> /root/.bashrc
 
 # SSH runtime directories
 RUN mkdir -p /var/run/sshd /root/.ssh \
