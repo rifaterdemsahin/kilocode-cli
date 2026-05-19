@@ -95,6 +95,7 @@
 | `alternatives.md` | Terminal AI alternatives + xAI setup |
 | `run_kilocode_mac.md` | Mac-specific KiloCode guide |
 | `flyio_deployment.md` | Authoritative formula for Fly.io remote VM |
+| `flyio_cost_estimation.md` | Cost analysis and optimization for Fly.io VM |
 
 ---
 
