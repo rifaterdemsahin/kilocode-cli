@@ -6,6 +6,10 @@ if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
     ssh-keygen -A
 fi
 
+# Enable root login with password for SSH (single-tenant VM)
+sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
 # Lock down authorized_keys permissions if present
 if [ -f /root/.ssh/authorized_keys ]; then
     chmod 600 /root/.ssh/authorized_keys
@@ -35,15 +39,13 @@ if [ -n "${TTYD_PASSWORD:-}" ]; then
     exec /usr/local/bin/ttyd \
         --port 7681 \
         --credential "root:${TTYD_PASSWORD}" \
-        --check-origin \
-        --signal SIGINT \
+        --writable \
         bash
 else
     echo "⚠ TTYD_PASSWORD not set — browser terminal will be open (no auth)."
     echo "  Set it with: flyctl secrets set TTYD_PASSWORD=<strong-password>"
     exec /usr/local/bin/ttyd \
         --port 7681 \
-        --check-origin \
-        --signal SIGINT \
+        --writable \
         bash
 fi
