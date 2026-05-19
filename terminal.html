@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🖥 Kilo Terminal — Web Command Center</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --danger: #f85149;
+      --warn: #d29922;
+      --terminal-bg: #0a0c10;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.8rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .brand h1 { font-size: 1rem; font-weight: 600; }
+    .brand span { color: var(--muted); font-size: 0.75rem; }
+
+    /* ── KEY BADGE ── */
+    #key-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+    }
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .badge.ok { background: rgba(63,185,80,0.15); color: var(--accent2); border-color: rgba(63,185,80,0.3); }
+    .badge.missing { background: rgba(248,81,73,0.15); color: var(--danger); border-color: rgba(248,81,73,0.3); }
+    .btn {
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: #79b8ff; }
+    .btn.danger { border-color: var(--danger); color: var(--danger); }
+    .btn.danger:hover { background: rgba(248,81,73,0.15); }
+
+    /* ── LAYOUT ── */
+    .main {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1rem;
+      gap: 1rem;
+    }
+    @media (max-width: 800px) {
+      .main { grid-template-columns: 1fr; }
+      .sidebar { order: 2; }
+      .terminal-wrap { order: 1; }
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .panel h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.7rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .cmd-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.5rem 0.7rem;
+      margin-bottom: 0.4rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(88,166,255,0.05);
+      color: var(--text);
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .cmd-btn:hover {
+      border-color: var(--accent);
+      background: rgba(88,166,255,0.12);
+    }
+    .cmd-btn small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.7rem;
+      margin-top: 0.15rem;
+    }
+
+    /* ── TERMINAL ── */
+    .terminal-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .terminal {
+      background: var(--terminal-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      flex: 1;
+      min-height: 360px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .term-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.red { background: var(--danger); }
+    .dot.yellow { background: var(--warn); }
+    .dot.green { background: var(--accent2); }
+
+    #term-body {
+      flex: 1;
+      padding: 0.8rem;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .line { margin-bottom: 0.3rem; }
+    .line.out { color: var(--muted); }
+    .line.cmd { color: var(--accent); }
+    .line.err { color: var(--danger); }
+    .line.ok { color: var(--accent2); }
+    .line.warn { color: var(--warn); }
+
+    /* ── INPUT ── */
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      border-top: 1px solid var(--border);
+      background: var(--terminal-bg);
+    }
+    .prompt { color: var(--accent2); font-size: 0.85rem; }
+    #cmd-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    /* ── COPY BAR ── */
+    .copy-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.8rem;
+    }
+    #current-cmd {
+      flex: 1;
+      font-size: 0.82rem;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── MODAL ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      padding: 1.5rem;
+    }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
+    .modal p { color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.5; }
+    .modal label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .modal input, .modal textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.7rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .modal textarea { min-height: 80px; resize: vertical; }
+    .modal .row { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      z-index: 3000;
+      transition: transform 0.3s;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html" class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.604-3.369-1.341-3.369-1.341-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      <div>
+        <h1>Kilo Terminal</h1>
+        <span>Web Command Center</span>
+      </div>
+    </a>
+    <div id="key-status">
+      <span class="badge missing" id="key-badge">No API Key</span>
+      <button class="btn" onclick="openModal()">🔑 Set Key</button>
+      <button class="btn danger" onclick="clearKey()" id="clear-btn" style="display:none">Clear</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="panel">
+        <h3>⚡ Quick Actions</h3>
+        <button class="cmd-btn" onclick="setCmd('kilo --version')">
+          kilo --version
+          <small>Check installed version</small>
+        </button>
+        <button class="cmd-btn" onclick="setCmd('kilo run \"explain this codebase\"')">
+          kilo run "explain…"
+          <small>One-off task mode</small>
+        </button>
+        <button class="cmd-btn" onclick="setCmd('kilo --mode architect')">
+          kilo --mode architect
+          <small>Plan and design mode</small>
+        </button>
+        <button class="cmd-btn" onclick="setCmd('kilo --mode debug')">
+          kilo --mode debug
+          <small>Debug issues mode</small>
+        </button>
+        <button class="cmd-btn" onclick="setCmd('kilo --continue')">
+          kilo --continue
+          <small>Resume last session</small>
+        </button>
+      </div>
+
+      <div class="panel">
+        <h3>☁️ Fly.io Remote</h3>
+        <button class="cmd-btn" onclick="setCmd('ssh -p 2222 root@kilo-remote.fly.dev')">
+          SSH to Fly VM
+          <small>Connect from anywhere</small>
+        </button>
+        <button class="cmd-btn" onclick="setCmd('flyctl logs --app kilo-remote')">
+          flyctl logs
+          <small>View VM logs</small>
+        </button>
+        <button class="cmd-btn" onclick="setCmd('flyctl status --app kilo-remote')">
+          flyctl status
+          <small>Check machine health</small>
+        </button>
+      </div>
+
+      <div class="panel">
+        <h3>📖 Docs</h3>
+        <button class="cmd-btn" onclick="location.href='markdown_renderer.html?file=4_Formula/flyio_deployment.md'">
+          Fly.io Formula
+          <small>Full deployment guide</small>
+        </button>
+        <button class="cmd-btn" onclick="location.href='markdown_renderer.html?file=5_Symbols/flyio/README.md'">
+          Operator README
+          <small>Quick reference</small>
+        </button>
+      </div>
+    </aside>
+
+    <div class="terminal-wrap">
+      <div class="terminal">
+        <div class="term-bar">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span style="margin-left:auto">bash — kilo-remote</span>
+        </div>
+        <div id="term-body">
+          <div class="line out">Welcome to Kilo Terminal — Web Command Center</div>
+          <div class="line out">Click "Set Key" to store your Kilo API key securely in browser storage.</div>
+          <div class="line out">This page generates commands you can copy and run locally or on your Fly VM.</div>
+          <div class="line out"></div>
+          <div class="line out">GitHub Pages: <a href="https://rifaterdemsahin.github.io/kilocode-cli/" style="color:var(--accent)">https://rifaterdemsahin.github.io/kilocode-cli/</a></div>
+          <div class="line out"></div>
+        </div>
+        <div class="input-row">
+          <span class="prompt">$</span>
+          <input type="text" id="cmd-input" placeholder="Type a command and press Enter…" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="copy-bar">
+        <span id="current-cmd" style="color:var(--muted)">Select a quick action or type a command…</span>
+        <button class="btn primary" onclick="copyCmd()">📋 Copy</button>
+        <button class="btn" onclick="clearCmd()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal-overlay">
+    <div class="modal">
+      <h2>🔑 Set Kilo API Key</h2>
+      <p>Paste your API key from <a href="https://app.kilo.ai/profile" target="_blank" style="color:var(--accent)">app.kilo.ai/profile</a>. It is stored in your browser's localStorage (never leaves this device).</p>
+      <label>API Key</label>
+      <textarea id="api-key-input" placeholder="paste-your-kilo-api-key-here"></textarea>
+      <div class="row">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn primary" onclick="saveKey()">Save Key</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">Copied to clipboard</div>
+
+  <script>
+    const STORAGE_KEY = 'kilo_api_key';
+    let currentCommand = '';
+
+    function getKey() {
+      try { return localStorage.getItem(STORAGE_KEY) || ''; } catch(e) { return ''; }
+    }
+    function setKey(val) {
+      try { localStorage.setItem(STORAGE_KEY, val); } catch(e) { toast('Storage failed', true); }
+    }
+    function clearKey() {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+      updateBadge();
+      log('API key cleared from browser storage.', 'warn');
+    }
+    function updateBadge() {
+      const k = getKey();
+      const badge = document.getElementById('key-badge');
+      const clearBtn = document.getElementById('clear-btn');
+      if (k) {
+        badge.textContent = 'Key Saved (' + k.length + ' chars)';
+        badge.className = 'badge ok';
+        clearBtn.style.display = '';
+      } else {
+        badge.textContent = 'No API Key';
+        badge.className = 'badge missing';
+        clearBtn.style.display = 'none';
+      }
+    }
+
+    function openModal() {
+      document.getElementById('modal-overlay').classList.add('open');
+      document.getElementById('api-key-input').value = getKey();
+      setTimeout(() => document.getElementById('api-key-input').focus(), 50);
+    }
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+    }
+    function saveKey() {
+      const val = document.getElementById('api-key-input').value.trim();
+      if (!val) { toast('Please paste a key', true); return; }
+      setKey(val);
+      updateBadge();
+      closeModal();
+      toast('API key saved securely');
+      log('API key saved to browser storage (' + val.length + ' characters).', 'ok');
+    }
+
+    function log(text, cls = 'out') {
+      const body = document.getElementById('term-body');
+      const div = document.createElement('div');
+      div.className = 'line ' + cls;
+      div.textContent = text;
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function setCmd(cmd) {
+      currentCommand = cmd;
+      const display = document.getElementById('current-cmd');
+      display.textContent = cmd;
+      display.style.color = 'var(--text)';
+      log('$ ' + cmd, 'cmd');
+    }
+    function clearCmd() {
+      currentCommand = '';
+      document.getElementById('current-cmd').textContent = 'Select a quick action or type a command…';
+      document.getElementById('current-cmd').style.color = 'var(--muted)';
+    }
+    function copyCmd() {
+      if (!currentCommand) { toast('No command to copy', true); return; }
+      navigator.clipboard.writeText(currentCommand).then(() => toast('Copied to clipboard'));
+    }
+
+    document.getElementById('cmd-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const val = this.value.trim();
+        if (!val) return;
+        setCmd(val);
+        this.value = '';
+      }
+    });
+
+    function toast(msg, err) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.borderColor = err ? 'var(--danger)' : 'var(--border)';
+      t.style.color = err ? 'var(--danger)' : 'var(--text)';
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // Close modal on overlay click
+    document.getElementById('modal-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('modal-overlay')) closeModal();
+    });
+
+    // Init
+    updateBadge();
+  </script>
+</body>
+</html>

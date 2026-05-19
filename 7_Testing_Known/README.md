@@ -15,16 +15,12 @@
 
 ### Platform: macOS
 
-- [ ] `kilocode --version` prints version without errors
-- [ ] `kilocode doctor` shows all green
-- [ ] Ollama API responds at `http://localhost:11434/api/tags`
-- [ ] `nomic-embed-text` model listed in `ollama list`
-- [ ] Qdrant health check passes at `http://localhost:6333/healthz`
-- [ ] `kilocode_docs` collection exists with `size: 4096`
-- [ ] `kilocode index .` completes on sample project (>0 vectors)
-- [ ] `kilocode ask "what does main.ts do?"` returns relevant answer
-- [ ] Response time < 3 seconds for typical query
-- [ ] Config persists across terminal restarts
+- [ ] `kilo --version` prints version without errors
+- [ ] `kilo` opens the TUI successfully
+- [ ] `kilo run "explain this"` returns a result
+- [ ] Web Terminal (`terminal.html`) loads and key storage works
+- [ ] Fly.io deploy script runs without errors
+- [ ] SSH to Fly VM on port 2222 succeeds
 
 ### Platform: Windows
 
@@ -87,6 +83,7 @@ Run after any configuration change:
 |------|---------|
 | `README.md` | This file — testing checklist |
 | `test_results.md` | Recorded test run results |
+| `test_terminal.js` | Automated test suite for terminal.html |
 
 ---
 
