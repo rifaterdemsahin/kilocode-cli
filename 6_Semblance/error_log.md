@@ -176,15 +176,22 @@ bash: ping: command not found
 
 **Root Cause (ping):** Ubuntu 24.04 minimal Docker image does not include `iputils-ping` by default.
 
-**Root Cause (kilo hang):** `kilo` is a Node.js wrapper that spawns a platform-specific compiled binary with `stdio: "inherit"`. In ttyd's web terminal, the Go-based TUI binary appears to hang during TTY initialization (likely waiting for terminal readiness or raw mode setup). Even `kilo --version` hangs because the wrapper uses `spawnSync` which blocks until the child exits.
+**Root Cause (kilo hang):** `kilo` is a Go TUI binary (not Node.js). It uses platform-native terminal manipulation (hide cursor, raw mode, alternate screen buffer) via Go libraries like `termenv` or `bubbletea`. In ttyd's web terminal, these low-level TTY ioctls partially fail — producing garbage characters (`çççççççç` from malformed ANSI sequences) — and then the event loop blocks waiting for terminal input that never arrives.
+
+**Evidence:**
+- Direct binary call hangs: `/usr/lib/.../cli-linux-x64/bin/kilo --version` → `çççççççç` + freeze
+- Node.js wrapper is NOT the problem — the Go binary itself hangs
+- `CI=true` and `KILO_NONINTERACTIVE=1` are ignored by the Go binary
 
 **Fix:**
-1. Add `iputils-ping`, `dnsutils`, and `netcat-openbsd` to Dockerfile for network diagnostics
-2. Set `ENV CI=true` and `ENV TERM=xterm-256color` in Dockerfile — `CI=true` disables interactive TUI mode in many modern CLIs
-3. Cache the actual kilo binary path as `.kilo` symlink to bypass wrapper's `findBinary()` search
-4. In entrypoint, export `CI=true` and `KILO_NONINTERACTIVE=1` before starting ttyd
-5. Pass these env vars through ttyd command: `bash -c 'export TERM=... CI=true ...; exec bash'`
-6. Add colorful bash prompt (`PS1`, `LS_COLORS`, aliases) to `.bashrc`
+1. Install `tmux` in the container
+2. Run kilo inside tmux: `tmux new-session -A -s kilo -n kilo kilo`
+3. Tmux provides a proper virtual PTY that supports the Go binary's TUI operations
+
+**Workarounds (in browser terminal without tmux):**
+- `kilo run "your prompt"` — may still hang if the binary does TUI detection on startup
+- SSH into the VM from your Mac terminal: `ssh -p 2222 root@kilo-remote.fly.dev` — native SSH provides a real PTY
+- Use the browser terminal for file management, git, vim — use SSH or tmux for `kilo` TUI
 
 **Prevention:**
 - Always include common network tools in remote VM Dockerfiles

@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     dnsutils \
     netcat-openbsd \
+    tmux \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
@@ -46,12 +47,13 @@ RUN KILO_REAL=$(find /usr/lib/node_modules -name kilo -path '*/@kilocode/cli-lin
 # Verify kilo binary works
 RUN which kilo && kilo --version
 
-# Colorful bash prompt for the browser terminal
+# Colorful bash prompt + tmux alias for TUI apps
 RUN echo 'export PS1="\[\e[1;32m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ "' >> /root/.bashrc \
     && echo 'export LS_COLORS="rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32"' >> /root/.bashrc \
     && echo 'alias ls="ls --color=auto"' >> /root/.bashrc \
     && echo 'alias ll="ls -la --color=auto"' >> /root/.bashrc \
-    && echo 'alias grep="grep --color=auto"' >> /root/.bashrc
+    && echo 'alias grep="grep --color=auto"' >> /root/.bashrc \
+    && echo 'alias kilo="tmux new-session -A -s kilo -n kilo kilo"' >> /root/.bashrc
 
 # SSH runtime directories
 RUN mkdir -p /var/run/sshd /root/.ssh \
