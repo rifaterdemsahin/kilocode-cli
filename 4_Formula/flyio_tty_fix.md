@@ -142,29 +142,18 @@ script -q -c "kilo --version" /dev/null
 
 ---
 
-### Fix #7: TTY Detection Wrapper (Latest Attempt)
+### Fix #7: Fly.io HTTP Service (Working)
 
-**Tried:** Create `/usr/local/bin/kilo-ttyd-wrapper` that detects if stdout is a real terminal
+**Tried:** Configure `fly.toml` with `http_service` for ttyd
 
-```bash
-#!/bin/bash
-KILO_REAL_BIN="/usr/lib/node_modules/@kilocode/cli/node_modules/@kilocode/cli-linux-x64/bin/kilo"
-
-# Check if stdout is a terminal AND TERM is not dumb
-if [ ! -t 1 ] || [ "${TERM:-}" = "dumb" ]; then
-    # Not a real terminal (e.g., ttyd web terminal) — run without TUI
-    exec "$KILO_REAL_BIN" "$@" 2>&1
-fi
-
-# Real terminal (e.g., SSH session) — run with full TUI
-exec "$KILO_REAL_BIN" "$@"
+**In fly.toml:**
+```toml
+[http_service]
+  internal_port = 7681
+  force_https = true
 ```
 
-**Result:** Deployed. Testing needed. If stdout is not a TTY, the binary is run directly; this may force the Go binary into non-interactive mode (some binaries check `isatty(stdout)` to decide TUI vs plain text).
-
-**Aliases added:**
-- `k` → `kilo-ttyd-wrapper` (short command for browser terminal)
-- `kt` → `tmux new-session -A -s kilo -n kilo kilo` (for full TUI in tmux)
+**Result:** Browser terminal accessible at `https://kilo-remote.fly.dev/`, but the TUI binary issue remains.
 
 ---
 
@@ -182,18 +171,25 @@ ssh -p 2222 root@kilo-remote.fly.dev
 
 ---
 
-### Fix #7: Fly.io HTTP Service (Working)
+### Fix #9: Smart TTY Wrapper (Success)
 
-**Tried:** Configure `fly.toml` with `http_service` for ttyd
+**Tried:** Create a wrapper that detects `ttyd` sessions specifically and forces non-TUI mode by piping to `cat`.
 
-**In fly.toml:**
-```toml
-[http_service]
-  internal_port = 7681
-  force_https = true
-```
+**Implementation:**
+1.  **Modify `entrypoint.sh`**: Export `TTYD_SESSION=true` when spawning the browser bash session.
+2.  **Update `kilo-ttyd-wrapper`**: Detect if in `ttyd` and NOT in `tmux`, then force non-TTY mode.
+    ```bash
+    if { [ -n "$TTYD_SESSION" ] && [ -z "$TMUX" ]; } || [ ! -t 1 ]; then
+        "$KILO_REAL_BIN" "$@" 2>&1 | cat
+        exit $?
+    fi
+    ```
+3.  **Update `.bashrc`**: Alias both `kilo` and `k` to the wrapper. Add `kt` alias for tmux.
 
-**Result:** Browser terminal accessible at `https://kilo-remote.fly.dev/`, but the TUI binary issue remains.
+**Result:** 
+- `kilo --version` now works instantly in the browser.
+- `kilo run "..."` works and outputs plain text.
+- `kt` (tmux) provides an environment where `kilo` TUI works perfectly in the browser.
 
 ---
 
@@ -201,12 +197,10 @@ ssh -p 2222 root@kilo-remote.fly.dev
 
 | Method | Command | Status |
 |--------|---------|--------|
-| **SSH from Mac/PC** | `ssh -p 2222 root@kilo-remote.fly.dev` then `kilo` | ✅ Perfect |
-| **tmux in browser** | `tmux new-session "kilo --version"` | ✅ Works |
-| **Direct binary in tmux** | `/usr/lib/.../cli-linux-x64/bin/kilo --version` inside tmux | ✅ Works |
-| **TTY wrapper in browser** | `kilo-ttyd-wrapper --version` or `k --version` | ⚠️ Deployed, needs testing |
-| **Browser terminal direct** | `kilo --version` | ❌ Hangs |
-| **Browser terminal with alias** | `kilo` (alias to tmux) | ⚠️ Starts tmux but UI may not fully render |
+| **Browser (Direct)** | `kilo --version` | ✅ Works (via smart wrapper) |
+| **Browser (Short)** | `k --version` | ✅ Works |
+| **Browser (Interactive)** | `kt` then `kilo` | ✅ Works (via tmux) |
+| **SSH from Mac/PC** | `ssh -p 2222 root@...` | ✅ Perfect (native TTY) |
 
 ---
 
@@ -214,30 +208,22 @@ ssh -p 2222 root@kilo-remote.fly.dev
 
 ### For quick commands (browser terminal):
 ```bash
-# Use the ttyd wrapper (forces non-TUI mode)
-kilo-ttyd-wrapper --version
-k --version        # short alias
-
-# Or use tmux explicitly
-# This creates a temporary tmux session, runs kilo, then exits
-tmux new-session "kilo run 'explain this codebase'"
+# Works directly now!
+kilo --version
+kilo run "explain this codebase"
 ```
 
-### For interactive TUI (SSH recommended):
+### For interactive TUI in browser:
 ```bash
-# From your Mac/PC
+# 1. Start tmux
+kt
+# 2. Run kilo (it will detect tmux and enable TUI)
+kilo
+```
+
+### For best experience:
+```bash
 ssh -p 2222 root@kilo-remote.fly.dev
-
-# Inside the VM
-kilo                    # full interactive TUI
-kilo --mode architect   # plan mode
-kilo --continue         # resume session
-```
-
-### For one-off tasks in browser:
-```bash
-# These may work even in browser if they bypass TUI init
-KILO_NONINTERACTIVE=1 kilo run "refactor this"   # depends on binary behavior
 ```
 
 ---
@@ -246,10 +232,10 @@ KILO_NONINTERACTIVE=1 kilo run "refactor this"   # depends on binary behavior
 
 | File | Changes |
 |------|---------|
-| `Dockerfile` | Added tmux, CI env, binary cache, .bashrc colors, ttyd wrapper |
-| `entrypoint.sh` | TTY exports, tmux-ready environment |
+| `Dockerfile` | Added tmux, CI env, binary cache, .bashrc colors, smart wrapper aliases |
+| `entrypoint.sh` | TTY exports, `TTYD_SESSION` flag, tmux-ready environment |
 | `fly.toml` | http_service for ttyd HTTPS |
-| `kilo-ttyd-wrapper` | New script: detects limited terminal, forces non-TUI mode |
+| `kilo-ttyd-wrapper` | Smart logic: detects `ttyd` vs `tmux` vs `ssh` |
 | `6_Semblance/error_log.md` | F01: Kilo hang error log |
 | `4_Formula/flyio_tty_fix.md` | TTY fix documentation |
 | `4_Formula/flyio_deployment.md` | Deployment steps |
@@ -262,15 +248,14 @@ KILO_NONINTERACTIVE=1 kilo run "refactor this"   # depends on binary behavior
 2. **ttyd ≠ real terminal** — Web terminals are great for bash, but may fail for TUI apps
 3. **tmux is a lifesaver** — Creates a proper PTY inside containers where TUI apps work
 4. **SSH is still king** — For anything beyond basic shell commands, native SSH provides the best terminal emulation
-5. **Test the actual binary, not the wrapper** — The Node.js wrapper masked that the issue was in the Go binary
-6. **`script` doesn't fix everything** — Even a proper PTY via `script` didn't help; xterm.js emulation is the real bottleneck
-7. **TTY detection wrappers are worth trying** — Some binaries check `isatty()` and change behavior; forcing non-TTY mode may enable plain text output
+5. **Detection is key** — Using `TTYD_SESSION` and `TMUX` env vars allows a single wrapper to behave correctly in all environments
+6. **`isatty` can be tricked** — Piping to `cat` is a reliable way to force Go binaries out of TUI mode when they don't have a `--no-tui` flag
 
 ---
 
 ## 8. Future Improvements
 
-- [ ] Create a custom wrapper script that pre-detects ttyd and falls back to non-TUI mode
+- [x] Create a custom wrapper script that pre-detects ttyd and falls back to non-TUI mode
 - [ ] Investigate `screen` as lighter alternative to tmux
 - [ ] Add a health check endpoint that verifies `kilo --version` inside the container
 - [ ] Document SSH key setup for passwordless auth

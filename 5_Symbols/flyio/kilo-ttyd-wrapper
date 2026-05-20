@@ -1,17 +1,20 @@
 #!/bin/bash
 # kilo-ttyd-wrapper — runs kilo CLI in a way that works inside ttyd browser terminal
-# The Go TUI binary hangs in ttyd due to incomplete TTY support, so we:
-# 1. Detect if stdout is a real terminal
-# 2. If not, run the binary directly (forces non-TUI/plain text mode)
-# 3. If yes, run normally (for SSH sessions with full PTY)
+# The Go TUI binary hangs in ttyd due to incomplete TTY support.
+# This wrapper detects limited environments and forces non-interactive mode.
 
 KILO_REAL_BIN="/usr/lib/node_modules/@kilocode/cli/node_modules/@kilocode/cli-linux-x64/bin/kilo"
 
-# Check if stdout is a terminal AND TERM is not dumb
-if [ ! -t 1 ] || [ "${TERM:-}" = "dumb" ]; then
-    # Not a real terminal (e.g., ttyd web terminal) — run without TUI
-    exec "$KILO_REAL_BIN" "$@" 2>&1
+# Logic for forcing non-TUI mode:
+# 1. We are in a ttyd session (TTYD_SESSION=true) AND NOT inside tmux
+# 2. OR stdout is not a terminal ([ ! -t 1 ])
+# 3. OR the terminal is explicitly 'dumb'
+if { [ -n "${TTYD_SESSION:-}" ] && [ -z "${TMUX:-}" ]; } || [ ! -t 1 ] || [ "${TERM:-}" = "dumb" ]; then
+    # Run binary and pipe output through cat to disable TUI features
+    # Use 2>&1 to ensure error messages are also captured and piped
+    "$KILO_REAL_BIN" "$@" 2>&1 | cat
+    exit $?
 fi
 
-# Real terminal (e.g., SSH session) — run with full TUI
+# Real terminal (SSH) or Virtual PTY (tmux) — run with full TUI
 exec "$KILO_REAL_BIN" "$@"
